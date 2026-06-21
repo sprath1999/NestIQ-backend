@@ -1,0 +1,18 @@
+# gitignore 
+# STS/Eclipse metadata
+.metadata/
+.settings/
+.classpath
+.project
+
+# Maven
+target/
+*.jar
+*.war
+
+# Spring Boot
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
