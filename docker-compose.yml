@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+  mysql-auth:
+    image: mysql:8.0
+    container_name: nestiq-mysql-auth
+    environment:
+      MYSQL_ROOT_PASSWORD: nestiq123
+      MYSQL_DATABASE: nestiq_auth
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_auth_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  mysql-resident:
+    image: mysql:8.0
+    container_name: nestiq-mysql-resident
+    environment:
+      MYSQL_ROOT_PASSWORD: nestiq123
+      MYSQL_DATABASE: nestiq_resident
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_resident_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  auth-service:
+    build: ./auth-service
+    container_name: nestiq-auth
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-auth:3306/nestiq_auth
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: nestiq123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: nestiq_super_secret_key_2024_must_be_at_least_256_bits_long
+      JWT_ACCESS_TOKEN_EXPIRATION: 900000
+      JWT_REFRESH_TOKEN_EXPIRATION: 604800000
+    depends_on:
+      mysql-auth:
+        condition: service_healthy
+
+  resident-service:
+    build: ./resident-service
+    container_name: nestiq-resident
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-resident:3306/nestiq_resident
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: nestiq123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: nestiq_super_secret_key_2024_must_be_at_least_256_bits_long
+    depends_on:
+      mysql-resident:
+        condition: service_healthy
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: nestiq-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8081
+      RESIDENT_SERVICE_URL: http://resident-service:8082
+    depends_on:
+      - auth-service
+      - resident-service
+
+volumes:
+  mysql_auth_data:
+  mysql_resident_data:
