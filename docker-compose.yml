@@ -93,6 +93,36 @@ services:
       mysql-visitor:
         condition: service_healthy
 
+  mysql-notification:
+    image: mysql:8.0
+    container_name: nestiq-mysql-notification
+    environment:
+      MYSQL_ROOT_PASSWORD: nestiq123
+      MYSQL_DATABASE: nestiq_notification
+    ports:
+      - "3310:3306"
+    volumes:
+      - mysql_notification_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  notification-service:
+    build: ./notification-service
+    container_name: nestiq-notification
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-notification:3306/nestiq_notification
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: nestiq123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: nestiq_super_secret_key_2024_must_be_at_least_256_bits_long
+    depends_on:
+      mysql-notification:
+        condition: service_healthy
+
   api-gateway:
     build: ./api-gateway
     container_name: nestiq-gateway
@@ -111,3 +141,4 @@ volumes:
   mysql_auth_data:
   mysql_resident_data:
   mysql_visitor_data:
+  mysql_notification_data:

@@ -21,11 +21,14 @@ public class VisitorService {
 
     private final VisitorRepository visitorRepository;
     private final ParcelRepository parcelRepository;
+    private final NotificationClient notificationClient;
 
     public VisitorService(VisitorRepository visitorRepository,
-                          ParcelRepository parcelRepository) {
+                          ParcelRepository parcelRepository,
+                          NotificationClient notificationClient) {
         this.visitorRepository = visitorRepository;
         this.parcelRepository = parcelRepository;
+        this.notificationClient = notificationClient;
     }
 
     // Resident pre-approves visitor
@@ -61,6 +64,18 @@ public class VisitorService {
                 .build();
         visitor.setEntryTime(LocalDateTime.now());
         visitorRepository.save(visitor);
+
+        // Notify resident
+        if (request.getResidentId() != null && request.getResidentId() > 0) {
+            notificationClient.sendNotification(
+                request.getResidentId(),
+                "Visitor Arrived 🚪",
+                visitor.getVisitorName() + " has arrived at the gate. Flat: " + visitor.getFlatNumber(),
+                "VISITOR_ENTRY",
+                "visitorId:" + visitor.getId()
+            );
+        }
+
         return mapToVisitorResponse(visitor);
     }
 
@@ -119,6 +134,18 @@ public class VisitorService {
                 .description(request.getDescription())
                 .build();
         parcelRepository.save(parcel);
+
+        // Notify resident
+        if (request.getResidentId() != null && request.getResidentId() > 0) {
+            notificationClient.sendNotification(
+                request.getResidentId(),
+                "Parcel Arrived 📦",
+                "A parcel from " + request.getSender() + " has arrived at the security desk.",
+                "PARCEL_ARRIVED",
+                "parcelId:" + parcel.getId()
+            );
+        }
+
         return mapToParcelResponse(parcel);
     }
 
