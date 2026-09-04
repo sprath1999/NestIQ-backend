@@ -1,4 +1,6 @@
 package com.nestiq.resident.service;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 
 import com.nestiq.resident.dto.FlatRequest;
 import com.nestiq.resident.dto.FlatResponse;
@@ -19,6 +21,7 @@ public class FlatService {
         this.flatRepository = flatRepository;
     }
 
+    @CacheEvict(value = "flats", allEntries = true)
     @Transactional
     public FlatResponse createFlat(FlatRequest request) {
         if (flatRepository.findByFlatNumber(request.getFlatNumber()).isPresent()) {
@@ -45,13 +48,15 @@ public class FlatService {
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
-
+    
+    @Cacheable(value = "flats", key = "#flatNumber")
     public FlatResponse getFlatByNumber(String flatNumber) {
         Flat flat = flatRepository.findByFlatNumber(flatNumber)
                 .orElseThrow(() -> new RuntimeException("Flat not found: " + flatNumber));
         return mapToResponse(flat);
     }
 
+    @CacheEvict(value = "flats", allEntries = true)
     @Transactional
     public FlatResponse updateFlat(Long id, FlatRequest request) {
         Flat flat = flatRepository.findById(id)

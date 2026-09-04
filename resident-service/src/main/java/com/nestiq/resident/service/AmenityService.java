@@ -13,6 +13,9 @@ import com.nestiq.resident.repository.AmenityRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,8 +30,9 @@ public class AmenityService {
         this.amenityRepository = amenityRepository;
         this.bookingRepository = bookingRepository;
     }
-
+    
     // Admin creates amenity
+    @CacheEvict(value = "amenities", allEntries = true)
     @Transactional
     public AmenityResponse createAmenity(AmenityRequest request) {
         Amenity amenity = Amenity.builder()
@@ -47,6 +51,7 @@ public class AmenityService {
     }
 
     // Get all amenities
+    @Cacheable(value = "amenities", key = "'all'")
     public List<AmenityResponse> getAllAmenities() {
         return amenityRepository.findAll()
                 .stream()
@@ -55,6 +60,7 @@ public class AmenityService {
     }
 
     // Get available amenities
+    @Cacheable(value = "amenities", key = "'available'")
     public List<AmenityResponse> getAvailableAmenities() {
         return amenityRepository.findByStatus(AmenityStatus.AVAILABLE)
                 .stream()

@@ -1,6 +1,9 @@
 package com.nestiq.resident.service;
 
 import com.nestiq.resident.dto.NoticeRequest;
+
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.CacheEvict;
 import com.nestiq.resident.dto.NoticeResponse;
 import com.nestiq.resident.entity.Notice;
 import com.nestiq.resident.repository.NoticeRepository;
@@ -18,7 +21,8 @@ public class NoticeService {
     public NoticeService(NoticeRepository noticeRepository) {
         this.noticeRepository = noticeRepository;
     }
-
+    
+    @CacheEvict(value = "notices", allEntries = true)
     @Transactional
     public NoticeResponse createNotice(NoticeRequest request) {
         Notice notice = Notice.builder()
@@ -31,6 +35,7 @@ public class NoticeService {
         return mapToResponse(notice);
     }
 
+    @Cacheable(value = "notices", key = "'all'")
     public List<NoticeResponse> getAllNotices() {
         return noticeRepository.findAllByOrderByPinnedDescCreatedAtDesc()
                 .stream()
@@ -38,6 +43,7 @@ public class NoticeService {
                 .collect(Collectors.toList());
     }
 
+    @CacheEvict(value = "notices", allEntries = true)
     @Transactional
     public NoticeResponse updateNotice(Long id, NoticeRequest request) {
         Notice notice = noticeRepository.findById(id)
@@ -50,6 +56,7 @@ public class NoticeService {
         return mapToResponse(notice);
     }
 
+    @CacheEvict(value = "notices", allEntries = true)
     @Transactional
     public void deleteNotice(Long id) {
         noticeRepository.deleteById(id);
