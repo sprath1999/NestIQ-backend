@@ -31,6 +31,21 @@ services:
       timeout: 20s
       retries: 10
 
+  mysql-visitor:
+    image: mysql:8.0
+    container_name: nestiq-mysql-visitor
+    environment:
+      MYSQL_ROOT_PASSWORD: nestiq123
+      MYSQL_DATABASE: nestiq_visitor
+    ports:
+      - "3309:3306"
+    volumes:
+      - mysql_visitor_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
   auth-service:
     build: ./auth-service
     container_name: nestiq-auth
@@ -63,6 +78,21 @@ services:
       mysql-resident:
         condition: service_healthy
 
+  visitor-service:
+    build: ./visitor-service
+    container_name: nestiq-visitor
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-visitor:3306/nestiq_visitor
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: nestiq123
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: nestiq_super_secret_key_2024_must_be_at_least_256_bits_long
+    depends_on:
+      mysql-visitor:
+        condition: service_healthy
+
   api-gateway:
     build: ./api-gateway
     container_name: nestiq-gateway
@@ -71,10 +101,13 @@ services:
     environment:
       AUTH_SERVICE_URL: http://auth-service:8081
       RESIDENT_SERVICE_URL: http://resident-service:8082
+      VISITOR_SERVICE_URL: http://visitor-service:8083
     depends_on:
       - auth-service
       - resident-service
+      - visitor-service
 
 volumes:
   mysql_auth_data:
   mysql_resident_data:
+  mysql_visitor_data:
